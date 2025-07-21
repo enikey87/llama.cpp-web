@@ -19,7 +19,7 @@ const ChatWindow: React.FC = () => {
   } = useChatStore();
   
   const { selectedModel, error: modelError } = useModelStore();
-  const { isGenerating, setGenerating } = useUIStore();
+  const { isGenerating, setGenerating, sendFullHistory } = useUIStore();
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [inputError, setInputError] = React.useState<string | null>(null);
@@ -50,17 +50,20 @@ const ChatWindow: React.FC = () => {
       // Add user message
       await addMessage(content, 'user');
 
-      // Prepare messages for API
-      const apiMessages = messages.map(msg => ({
-        role: msg.role,
-        content: msg.content
-      }));
-
-      // Add the new user message
-      apiMessages.push({ role: 'user', content });
-
-      // Send to API
-      const response = await apiService.sendChat(selectedModel, apiMessages);
+      let response;
+      
+      if (sendFullHistory) {
+        // Send full chat history (original behavior)
+        const apiMessages = messages.map(msg => ({
+          role: msg.role,
+          content: msg.content
+        }));
+        apiMessages.push({ role: 'user', content });
+        response = await apiService.sendChat(selectedModel, apiMessages);
+      } else {
+        // Send only the current message (reduces CPU load)
+        response = await apiService.sendSingleMessage(selectedModel, content);
+      }
       
       // Add assistant response
       await addMessage(response.message.content, 'assistant');
@@ -104,6 +107,11 @@ const ChatWindow: React.FC = () => {
             <span className="chat-window__message-count">
               {messages.length} messages
             </span>
+            {!sendFullHistory && (
+              <span className="chat-window__mode-indicator">
+                (Single message mode)
+              </span>
+            )}
           </div>
         </div>
         <ModelSelector />

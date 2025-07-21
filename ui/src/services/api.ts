@@ -28,6 +28,24 @@ export class ApiService {
     return response.json();
   }
 
+  async sendSingleMessage(model: string, message: string, options = {}): Promise<ChatResponse> {
+    const request: ChatRequest = {
+      model,
+      messages: [{ role: 'user', content: message }],
+      stream: false,
+      options
+    };
+
+    const response = await fetch(`${API_BASE}/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(request)
+    });
+    
+    if (!response.ok) throw new Error('Failed to send chat message');
+    return response.json();
+  }
+
   async healthCheck(): Promise<HealthResponse> {
     const response = await fetch(`${API_BASE}/health`);
     if (!response.ok) throw new Error('Health check failed');
