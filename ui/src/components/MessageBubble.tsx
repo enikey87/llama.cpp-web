@@ -5,9 +5,10 @@ import '../styles/MessageBubble.css';
 interface MessageBubbleProps {
   message: Message;
   onCopy?: (content: string) => void;
+  isStreaming?: boolean;
 }
 
-const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onCopy }) => {
+const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onCopy, isStreaming = false }) => {
   const timestamp = new Date(message.timestamp).toLocaleTimeString([], { 
     hour: '2-digit', 
     minute: '2-digit' 
@@ -22,20 +23,25 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onCopy }) => {
   };
 
   return (
-    <div className={`message-bubble message-bubble--${message.role}`}>
+    <div className={`message-bubble message-bubble--${message.role} ${isStreaming ? 'message-bubble--streaming' : ''}`}>
       <div className="message-bubble__content">
         <div className="message-bubble__text">
           {message.content}
+          {isStreaming && (
+            <span className="message-bubble__cursor">|</span>
+          )}
         </div>
         <div className="message-bubble__footer">
           <span className="message-bubble__timestamp">{timestamp}</span>
-          <button 
-            className="message-bubble__copy-btn"
-            onClick={handleCopy}
-            title="Copy message"
-          >
-            📋
-          </button>
+          {!isStreaming && (
+            <button 
+              className="message-bubble__copy-btn"
+              onClick={handleCopy}
+              title="Copy message"
+            >
+              📋
+            </button>
+          )}
         </div>
       </div>
     </div>

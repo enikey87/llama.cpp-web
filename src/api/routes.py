@@ -87,9 +87,11 @@ async def generate_text_stream(request: GenerateRequest):
         
         async def generate_stream():
             start_time = time.time()
+            complete_response = ""
             
             async for chunk in model.generate_stream(request.prompt, request.options):
                 # Format streaming response
+                complete_response += chunk
                 response_data = {
                     "model": request.model,
                     "created_at": datetime.now().isoformat(),
@@ -98,12 +100,12 @@ async def generate_text_stream(request: GenerateRequest):
                 }
                 yield f"data: {json.dumps(response_data)}\n\n"
             
-            # Send final response
+            # Send final response with complete content
             duration = time.time() - start_time
             final_response = {
                 "model": request.model,
                 "created_at": datetime.now().isoformat(),
-                "response": "",
+                "response": complete_response,
                 "done": True,
                 "total_duration": int(duration * 1_000_000_000)
             }

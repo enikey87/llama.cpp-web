@@ -66,4 +66,28 @@
 
 .message-bubble--user .message-bubble__copy-btn:hover {
   background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Streaming message styles */
+.message-bubble--streaming .message-bubble__content {
+  border: 2px solid #3B82F6;
+  animation: pulse 2s infinite;
+}
+
+.message-bubble__cursor {
+  display: inline-block;
+  animation: blink 1s infinite;
+  font-weight: bold;
+  color: #3B82F6;
+}
+
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
 } 

@@ -23,6 +23,7 @@ const ChatWindow: React.FC = () => {
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [inputError, setInputError] = React.useState<string | null>(null);
+  const [streamingMessage, setStreamingMessage] = React.useState<string>('');
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -30,7 +31,7 @@ const ChatWindow: React.FC = () => {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messages, streamingMessage]);
 
   const handleSendMessage = async (content: string) => {
     if (!currentChat) {
@@ -45,37 +46,58 @@ const ChatWindow: React.FC = () => {
 
     setInputError(null);
     setGenerating(true);
+    setStreamingMessage('');
 
     try {
       // Add user message
       await addMessage(content, 'user');
 
-      let response;
+      // Prepare messages for API
+      let apiMessages: Array<{ role: 'user' | 'assistant'; content: string }>;
       
       if (sendFullHistory) {
-        // Send full chat history (original behavior)
-        const apiMessages = messages.map(msg => ({
+        // Send full chat history
+        apiMessages = messages.map(msg => ({
           role: msg.role,
           content: msg.content
         }));
         apiMessages.push({ role: 'user', content });
-        response = await apiService.sendChat(selectedModel, apiMessages);
       } else {
-        // Send only the current message (reduces CPU load)
-        response = await apiService.sendSingleMessage(selectedModel, content);
+        // Send only the current message
+        apiMessages = [{ role: 'user', content }];
       }
-      
-      // Add assistant response
-      await addMessage(response.message.content, 'assistant');
 
-      // Update chat title if it's the first message
-      if (messages.length === 0) {
-        const title = content.length > 30 ? content.substring(0, 30) + '...' : content;
-        updateChatTitle(currentChat.id, title);
-      }
+      // Use streaming for better UX
+      await apiService.sendChatStream(
+        selectedModel,
+        apiMessages,
+        {},
+        // onChunk callback
+        (chunk: string) => {
+          setStreamingMessage(prev => prev + chunk);
+        },
+        // onComplete callback
+        async (response) => {
+          // Add the complete assistant message
+          await addMessage(response.message.content, 'assistant');
+          setStreamingMessage('');
+          
+          // Update chat title if it's the first message
+          if (messages.length === 0) {
+            const title = content.length > 30 ? content.substring(0, 30) + '...' : content;
+            updateChatTitle(currentChat.id, title);
+          }
+        },
+        // onError callback
+        (error: string) => {
+          setInputError(error);
+          setStreamingMessage('');
+        }
+      );
 
     } catch (error) {
       setInputError(error instanceof Error ? error.message : 'Failed to send message');
+      setStreamingMessage('');
     } finally {
       setGenerating(false);
     }
@@ -132,7 +154,24 @@ const ChatWindow: React.FC = () => {
           ))
         )}
         
-        {isGenerating && (
+        {/* Show streaming message */}
+        {streamingMessage && (
+          <div className="chat-window__streaming-message">
+            <MessageBubble
+              message={{
+                id: 'streaming',
+                chatId: currentChat.id,
+                role: 'assistant',
+                content: streamingMessage,
+                timestamp: new Date().toISOString()
+              }}
+              onCopy={handleCopyMessage}
+              isStreaming={true}
+            />
+          </div>
+        )}
+        
+        {isGenerating && !streamingMessage && (
           <div className="chat-window__generating">
             <LoadingSpinner size="small" />
             <span>AI is thinking...</span>
