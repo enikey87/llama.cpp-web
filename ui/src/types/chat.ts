@@ -4,6 +4,7 @@ export interface Chat {
   model: string;
   createdAt: string;
   updatedAt: string;
+  sendFullHistory: boolean; // New field to store the setting per chat
 }
 
 export interface Message {

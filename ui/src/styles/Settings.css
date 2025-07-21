@@ -53,6 +53,14 @@
   line-height: 1.4;
 }
 
+.settings__note {
+  display: block;
+  font-size: 12px;
+  color: #6B7280;
+  font-style: italic;
+  margin-top: 4px;
+}
+
 .settings__select {
   padding: 8px 12px;
   border: 1px solid var(--border-color);

@@ -19,7 +19,7 @@ const ChatWindow: React.FC = () => {
   } = useChatStore();
   
   const { selectedModel, error: modelError } = useModelStore();
-  const { isGenerating, setGenerating, sendFullHistory } = useUIStore();
+  const { isGenerating, setGenerating } = useUIStore();
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [inputError, setInputError] = React.useState<string | null>(null);
@@ -55,7 +55,7 @@ const ChatWindow: React.FC = () => {
       // Prepare messages for API
       let apiMessages: Array<{ role: 'user' | 'assistant'; content: string }>;
       
-      if (sendFullHistory) {
+      if (currentChat.sendFullHistory) {
         // Send full chat history
         apiMessages = messages.map(msg => ({
           role: msg.role,
@@ -129,7 +129,7 @@ const ChatWindow: React.FC = () => {
             <span className="chat-window__message-count">
               {messages.length} messages
             </span>
-            {!sendFullHistory && (
+            {!currentChat.sendFullHistory && (
               <span className="chat-window__mode-indicator">
                 (Single message mode)
               </span>

@@ -25,6 +25,23 @@ class ChatDatabase extends Dexie {
         return tx.table('messages').clear();
       });
     });
+
+    // Version 3: Add sendFullHistory field to chats
+    this.version(3).stores({
+      chats: 'id, title, model, createdAt, updatedAt, sendFullHistory',
+      messages: 'id, chatId, role, content, timestamp'
+    }).upgrade(tx => {
+      // Add sendFullHistory field to existing chats
+      return tx.table('chats').toCollection().modify(chat => {
+        chat.sendFullHistory = true; // Default value for existing chats
+      });
+    });
+
+    // Version 4: Add compound index for chatId + timestamp ordering
+    this.version(4).stores({
+      chats: 'id, title, model, createdAt, updatedAt, sendFullHistory',
+      messages: 'id, chatId, role, content, timestamp, [chatId+timestamp]'
+    });
   }
 }
 
@@ -38,7 +55,8 @@ class DatabaseService {
       title,
       model,
       createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
+      sendFullHistory: true // Default to sending full history
     };
 
     await db.chats.add(chat);
@@ -84,7 +102,10 @@ class DatabaseService {
     return await db.messages
       .where('chatId')
       .equals(chatId)
-      .toArray();
+      .toArray()
+      .then(messages => messages.sort((a, b) => 
+        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+      ));
   }
 
   async deleteChat(chatId: string): Promise<void> {
@@ -104,6 +125,13 @@ class DatabaseService {
   async updateChatTitle(chatId: string, title: string): Promise<void> {
     await db.chats.update(chatId, {
       title,
+      updatedAt: new Date().toISOString()
+    });
+  }
+
+  async updateChatSettings(chatId: string, sendFullHistory: boolean): Promise<void> {
+    await db.chats.update(chatId, {
+      sendFullHistory,
       updatedAt: new Date().toISOString()
     });
   }

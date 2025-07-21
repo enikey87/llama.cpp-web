@@ -16,6 +16,7 @@ interface ChatStore {
   deleteChat: (chatId: string) => Promise<void>;
   loadChats: () => Promise<void>;
   updateChatTitle: (chatId: string, title: string) => Promise<void>;
+  updateChatSettings: (chatId: string, sendFullHistory: boolean) => Promise<void>;
   setError: (error: string | null) => void;
   setLoading: (loading: boolean) => void;
 }
@@ -102,6 +103,22 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       }));
     } catch (error) {
       set({ error: error instanceof Error ? error.message : 'Failed to update chat title' });
+    }
+  },
+
+  updateChatSettings: async (chatId: string, sendFullHistory: boolean) => {
+    try {
+      await databaseService.updateChatSettings(chatId, sendFullHistory);
+      set(state => ({
+        chats: state.chats.map(chat => 
+          chat.id === chatId ? { ...chat, sendFullHistory, updatedAt: new Date().toISOString() } : chat
+        ),
+        currentChat: state.currentChat?.id === chatId 
+          ? { ...state.currentChat, sendFullHistory, updatedAt: new Date().toISOString() }
+          : state.currentChat
+      }));
+    } catch (error) {
+      set({ error: error instanceof Error ? error.message : 'Failed to update chat settings' });
     }
   },
 
