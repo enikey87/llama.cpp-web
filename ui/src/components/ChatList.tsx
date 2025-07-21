@@ -1,6 +1,7 @@
 import React from 'react';
 import { useChatStore } from '../store/chatStore';
 import { Chat } from '../types/chat';
+import { DEFAULT_MODEL, DEFAULT_CHAT_TITLE, LOADING_MESSAGES } from '../constants';
 import '../styles/ChatList.css';
 
 const ChatList: React.FC = () => {
@@ -20,7 +21,7 @@ const ChatList: React.FC = () => {
   }, [loadChats]);
 
   const handleNewChat = () => {
-    createChat('New Chat', 'phi3-mini-4k-instruct');
+    createChat(DEFAULT_CHAT_TITLE, DEFAULT_MODEL);
   };
 
   const handleChatClick = (chat: Chat) => {
@@ -51,7 +52,7 @@ const ChatList: React.FC = () => {
   if (isLoading) {
     return (
       <div className="chat-list">
-        <div className="chat-list__loading">Loading chats...</div>
+        <div className="chat-list__loading">{LOADING_MESSAGES.LOADING_CHATS}</div>
       </div>
     );
   }

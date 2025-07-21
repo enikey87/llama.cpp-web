@@ -7,6 +7,7 @@ import MessageBubble from './MessageBubble';
 import MessageInput from './MessageInput';
 import ModelSelector from './ModelSelector';
 import LoadingSpinner from './LoadingSpinner';
+import { ERROR_MESSAGES, LOADING_MESSAGES, TITLE_MAX_LENGTH } from '../constants';
 import '../styles/ChatWindow.css';
 
 const ChatWindow: React.FC = () => {
@@ -35,12 +36,12 @@ const ChatWindow: React.FC = () => {
 
   const handleSendMessage = async (content: string) => {
     if (!currentChat) {
-      setInputError('No active chat. Please create a new chat first.');
+      setInputError(ERROR_MESSAGES.NO_ACTIVE_CHAT);
       return;
     }
 
     if (!selectedModel) {
-      setInputError('No model selected. Please select a model first.');
+      setInputError(ERROR_MESSAGES.NO_MODEL_SELECTED);
       return;
     }
 
@@ -84,7 +85,7 @@ const ChatWindow: React.FC = () => {
           
           // Update chat title if it's the first message
           if (messages.length === 0) {
-            const title = content.length > 30 ? content.substring(0, 30) + '...' : content;
+            const title = content.length > TITLE_MAX_LENGTH ? content.substring(0, TITLE_MAX_LENGTH) + '...' : content;
             updateChatTitle(currentChat.id, title);
           }
         },
@@ -96,7 +97,7 @@ const ChatWindow: React.FC = () => {
       );
 
     } catch (error) {
-      setInputError(error instanceof Error ? error.message : 'Failed to send message');
+      setInputError(error instanceof Error ? error.message : ERROR_MESSAGES.UNKNOWN_ERROR);
       setStreamingMessage('');
     } finally {
       setGenerating(false);
@@ -174,7 +175,7 @@ const ChatWindow: React.FC = () => {
         {isGenerating && !streamingMessage && (
           <div className="chat-window__generating">
             <LoadingSpinner size="small" />
-            <span>AI is thinking...</span>
+            <span>{LOADING_MESSAGES.GENERATING}</span>
           </div>
         )}
         
@@ -195,7 +196,7 @@ const ChatWindow: React.FC = () => {
         <MessageInput
           onSendMessage={handleSendMessage}
           disabled={isGenerating}
-          placeholder={isGenerating ? "AI is thinking..." : "Type your message..."}
+          placeholder={isGenerating ? LOADING_MESSAGES.GENERATING : "Type your message..."}
         />
       </div>
     </div>

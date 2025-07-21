@@ -1,6 +1,7 @@
 import React from 'react';
 import { useModelStore } from '../store/modelStore';
 import LoadingSpinner from './LoadingSpinner';
+import { LOADING_MESSAGES } from '../constants';
 import '../styles/ModelSelector.css';
 
 const ModelSelector: React.FC = () => {
@@ -18,7 +19,7 @@ const ModelSelector: React.FC = () => {
     return (
       <div className="model-selector">
         <LoadingSpinner size="small" />
-        <span>Loading models...</span>
+        <span>{LOADING_MESSAGES.LOADING_MODELS}</span>
       </div>
     );
   }

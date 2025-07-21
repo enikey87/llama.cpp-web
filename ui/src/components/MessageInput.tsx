@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { MAX_MESSAGE_LENGTH } from '../constants';
 import '../styles/MessageInput.css';
 
 interface MessageInputProps {
@@ -54,7 +55,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
           disabled={disabled}
           className="message-input__textarea"
           rows={1}
-          maxLength={4000}
+          maxLength={MAX_MESSAGE_LENGTH}
         />
         <button
           type="submit"

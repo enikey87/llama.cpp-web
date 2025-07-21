@@ -1,46 +1,25 @@
 import Dexie, { Table } from 'dexie';
 import { Chat, Message } from '../types/chat';
+import { DB_NAME, DB_VERSION } from '../constants';
 
-// Define the database class
 class ChatDatabase extends Dexie {
   chats!: Table<Chat>;
   messages!: Table<Message>;
 
   constructor() {
-    super('llama_cpp_web_db');
+    super(DB_NAME);
     
-    // Define database schema with string IDs
-    this.version(1).stores({
-      chats: 'id, title, model, createdAt, updatedAt',
-      messages: 'id, chatId, role, content, timestamp'
-    });
-
-    // Version 2: Clear existing data to handle schema changes
-    this.version(2).stores({
-      chats: 'id, title, model, createdAt, updatedAt',
-      messages: 'id, chatId, role, content, timestamp'
-    }).upgrade(tx => {
-      // Clear existing data to avoid conflicts
-      return tx.table('chats').clear().then(() => {
-        return tx.table('messages').clear();
-      });
-    });
-
-    // Version 3: Add sendFullHistory field to chats
-    this.version(3).stores({
-      chats: 'id, title, model, createdAt, updatedAt, sendFullHistory',
-      messages: 'id, chatId, role, content, timestamp'
-    }).upgrade(tx => {
-      // Add sendFullHistory field to existing chats
-      return tx.table('chats').toCollection().modify(chat => {
-        chat.sendFullHistory = true; // Default value for existing chats
-      });
-    });
-
-    // Version 4: Add compound index for chatId + timestamp ordering
-    this.version(4).stores({
+    // Single comprehensive migration with all features
+    this.version(DB_VERSION).stores({
       chats: 'id, title, model, createdAt, updatedAt, sendFullHistory',
       messages: 'id, chatId, role, content, timestamp, [chatId+timestamp]'
+    }).upgrade(tx => {
+      // Add sendFullHistory field to existing chats if upgrading from older version
+      return tx.table('chats').toCollection().modify(chat => {
+        if (chat.sendFullHistory === undefined) {
+          chat.sendFullHistory = true; // Default value for existing chats
+        }
+      });
     });
   }
 }

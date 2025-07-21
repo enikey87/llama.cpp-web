@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import ChatList from './components/ChatList';
 import ChatWindow from './components/ChatWindow';
 import Settings from './components/Settings';
+import ChatErrorBoundary from './components/ErrorBoundary';
 import { useUIStore } from './store/uiStore';
 import './App.css';
 
@@ -11,22 +12,24 @@ function App() {
 
   return (
     <div className="app" data-theme={theme}>
-      <div className="app__sidebar">
-        <div className="app__sidebar-header">
-          <h1 className="app__title">llama.cpp-web</h1>
-          <button 
-            onClick={() => setShowSettings(true)}
-            className="app__settings-btn"
-            title="Settings"
-          >
-            ⚙️
-          </button>
+      <ChatErrorBoundary>
+        <div className="app__sidebar">
+          <div className="app__sidebar-header">
+            <h1 className="app__title">llama.cpp-web</h1>
+            <button 
+              onClick={() => setShowSettings(true)}
+              className="app__settings-btn"
+              title="Settings"
+            >
+              ⚙️
+            </button>
+          </div>
+          <ChatList />
         </div>
-        <ChatList />
-      </div>
-      <div className="app__main">
-        <ChatWindow />
-      </div>
+        <div className="app__main">
+          <ChatWindow />
+        </div>
+      </ChatErrorBoundary>
       
       {showSettings && (
         <div className="app__modal-overlay" onClick={() => setShowSettings(false)}>

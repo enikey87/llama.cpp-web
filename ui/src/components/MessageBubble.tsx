@@ -48,4 +48,4 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onCopy, isStream
   );
 };
 
-export default MessageBubble; 
+export default React.memo(MessageBubble); 

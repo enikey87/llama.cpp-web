@@ -1,11 +1,15 @@
 import { Model, ChatRequest, ChatResponse, TagsResponse, HealthResponse } from '../types/api';
+import { ERROR_MESSAGES } from '../constants';
 
-const API_BASE = 'http://localhost:11434/api';
+const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:11434/api';
 
 export class ApiService {
   async getModels(): Promise<Model[]> {
     const response = await fetch(`${API_BASE}/tags`);
-    if (!response.ok) throw new Error('Failed to fetch models');
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to fetch models: ${errorText || 'Unknown error'}`);
+    }
     const data: TagsResponse = await response.json();
     return data.models;
   }
@@ -24,7 +28,21 @@ export class ApiService {
       body: JSON.stringify(request)
     });
     
-    if (!response.ok) throw new Error('Failed to send chat message');
+    if (!response.ok) {
+      const errorText = await response.text();
+      const status = response.status;
+      
+      switch (status) {
+        case 404:
+          throw new Error(ERROR_MESSAGES.MODEL_NOT_FOUND);
+        case 500:
+          throw new Error(ERROR_MESSAGES.SERVER_ERROR);
+        case 413:
+          throw new Error(ERROR_MESSAGES.MESSAGE_TOO_LONG);
+        default:
+          throw new Error(`Request failed: ${errorText || 'Unknown error'}`);
+      }
+    }
     return response.json();
   }
 
@@ -61,7 +79,18 @@ export class ApiService {
       
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`Failed to send chat message: ${errorText}`);
+        const status = response.status;
+        
+        switch (status) {
+          case 404:
+            throw new Error(ERROR_MESSAGES.MODEL_NOT_FOUND);
+          case 500:
+            throw new Error(ERROR_MESSAGES.SERVER_ERROR);
+          case 413:
+            throw new Error(ERROR_MESSAGES.MESSAGE_TOO_LONG);
+          default:
+            throw new Error(`Request failed: ${errorText || 'Unknown error'}`);
+        }
       }
 
       const reader = response.body?.getReader();
@@ -111,7 +140,7 @@ export class ApiService {
       }
     } catch (error) {
       if (onError) {
-        onError(error instanceof Error ? error.message : 'Streaming failed');
+        onError(error instanceof Error ? error.message : ERROR_MESSAGES.UNKNOWN_ERROR);
       } else {
         throw error;
       }
@@ -132,13 +161,30 @@ export class ApiService {
       body: JSON.stringify(request)
     });
     
-    if (!response.ok) throw new Error('Failed to send chat message');
+    if (!response.ok) {
+      const errorText = await response.text();
+      const status = response.status;
+      
+      switch (status) {
+        case 404:
+          throw new Error(ERROR_MESSAGES.MODEL_NOT_FOUND);
+        case 500:
+          throw new Error(ERROR_MESSAGES.SERVER_ERROR);
+        case 413:
+          throw new Error(ERROR_MESSAGES.MESSAGE_TOO_LONG);
+        default:
+          throw new Error(`Request failed: ${errorText || 'Unknown error'}`);
+      }
+    }
     return response.json();
   }
 
   async healthCheck(): Promise<HealthResponse> {
     const response = await fetch(`${API_BASE}/health`);
-    if (!response.ok) throw new Error('Health check failed');
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Health check failed: ${errorText || 'Unknown error'}`);
+    }
     return response.json();
   }
 }
