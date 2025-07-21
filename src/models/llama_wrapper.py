@@ -74,15 +74,51 @@ class LlamaCppModel:
                 logger.error(f"llama.cpp error: {error_msg}")
                 raise RuntimeError(f"llama.cpp failed: {error_msg}")
             
-            response = stdout.decode().strip()
+            raw_response = stdout.decode().strip()
             duration = time.time() - start_time
             
+            # Clean up the response by removing the prompt and artifacts
+            cleaned_response = self._clean_response(raw_response, prompt)
+            
             logger.info(f"Generated response in {duration:.2f}s")
-            return response
+            return cleaned_response
             
         except Exception as e:
             logger.error(f"Error generating response: {e}")
             raise
+    
+    def _clean_response(self, raw_response: str, prompt: str) -> str:
+        """Clean up the response by removing prompt and artifacts."""
+        # Remove the original prompt from the response
+        if prompt in raw_response:
+            response = raw_response.replace(prompt, "").strip()
+        else:
+            response = raw_response
+        
+        # Remove common artifacts
+        artifacts_to_remove = [
+            "EOF by user",
+            "User:",
+            "Assistant:",
+            ">",
+            "<|endoftext|>",
+            "<|im_end|>",
+            "<|im_start|>"
+        ]
+        
+        for artifact in artifacts_to_remove:
+            response = response.replace(artifact, "")
+        
+        # Clean up extra whitespace and newlines
+        response = response.strip()
+        
+        # Remove leading/trailing quotes if present
+        if response.startswith('"') and response.endswith('"'):
+            response = response[1:-1]
+        elif response.startswith("'") and response.endswith("'"):
+            response = response[1:-1]
+        
+        return response.strip()
     
     async def generate_stream(self, prompt: str, options: Optional[Dict[str, Any]] = None):
         """Generate streaming response using llama.cpp CLI."""
@@ -110,6 +146,7 @@ class LlamaCppModel:
             
             # Stream response
             response_chunks = []
+            full_response = ""
             while True:
                 chunk = await process.stdout.readline()
                 if not chunk:
@@ -117,8 +154,12 @@ class LlamaCppModel:
                 
                 chunk_text = chunk.decode().strip()
                 if chunk_text:
-                    response_chunks.append(chunk_text)
-                    yield chunk_text
+                    # Clean up the chunk
+                    cleaned_chunk = self._clean_streaming_chunk(chunk_text, prompt, full_response)
+                    if cleaned_chunk:
+                        response_chunks.append(cleaned_chunk)
+                        full_response += cleaned_chunk
+                        yield cleaned_chunk
             
             # Wait for process to complete
             await process.wait()
@@ -135,6 +176,29 @@ class LlamaCppModel:
         except Exception as e:
             logger.error(f"Error generating streaming response: {e}")
             raise
+    
+    def _clean_streaming_chunk(self, chunk: str, prompt: str, full_response: str) -> str:
+        """Clean up a streaming chunk."""
+        # Remove artifacts from the chunk
+        artifacts_to_remove = [
+            "EOF by user",
+            "User:",
+            "Assistant:",
+            ">",
+            "<|endoftext|>",
+            "<|im_end|>",
+            "<|im_start|>"
+        ]
+        
+        cleaned_chunk = chunk
+        for artifact in artifacts_to_remove:
+            cleaned_chunk = cleaned_chunk.replace(artifact, "")
+        
+        # If this is the first chunk and it contains the prompt, remove it
+        if not full_response and prompt in cleaned_chunk:
+            cleaned_chunk = cleaned_chunk.replace(prompt, "")
+        
+        return cleaned_chunk.strip()
 
 
 class ModelRegistry:
